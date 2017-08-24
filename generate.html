@@ -1,0 +1,87 @@
+<html>
+  <head>
+    <title></title>
+  </head>
+  <body>
+    <input type="file" placeholder="Gateway" id="json">
+    <a href="" id="a" style="
+      box-sizing: border-box;
+      -webkit-appearance: textfield;
+      background-color: white;
+      -webkit-rtl-ordering: logical;
+      user-select: text;
+      cursor: auto;
+      padding: 1px;
+      border-width: 2px;
+      border-style: inset;
+      border-color: initial;
+      border-image: initial;
+    ">click here to download your file</a>
+    <br>
+    <div>
+      <pre id="gateway" style="width:45%;display: inline-block;margin: 0px; overflow-y:scroll;height:95vh;"></pre>
+      <pre id="list" style="width:50%;display: inline-block;margin: 0px; overflow-y:scroll;height:95vh;"></pre>
+    </div>
+  </body>
+</html>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.4/lodash.min.js"></script>
+<script type="text/javascript">
+var gate = {}, pairList = [];
+
+document.getElementById("json").addEventListener('change', function(e){
+  var reader = new FileReader();
+  reader.onload = function(){
+    var gateway = JSON.parse(reader.result);
+    document.getElementById("gateway").innerText = JSON.stringify(gateway, null, 4);
+    proccess(gateway);
+  };
+  reader.readAsText(e.target.files[0]);
+});
+
+function proccess(gate) {
+  var e_gateway = _.map(Object.keys(gate), function(key) { return gate[key]; });
+
+  _.forEach(e_gateway, function(a) {
+    _.forEach(e_gateway, function(e) {
+      _.forEach(a.wallets, function(i) {
+        _.forEach(e.wallets, function(o) {
+          _.forEach(i.currencies, function(u) {
+            _.forEach(o.currencies, function(c) {
+              if(i.address != o.address || u != c) {
+                var base_gateway = (u == "XRP")?'Ripple':a.name,
+                    counter_gateway = (c == "XRP")?'Ripple':e.name,
+                    base = (u == "XRP")?u:u+"."+base_gateway,
+                    counter = (c == "XRP")?c:c+"."+counter_gateway;
+
+                pairList.push({
+                  "ticker": base+"/"+counter,
+                  "issuers": {
+                    "base": i.address,
+                    "counter": o.address
+                  },
+                  "symbol": u+c,
+                  "full_name": u+c,
+                  "description": base_gateway+"/"+counter_gateway,
+                  "exchange": a.name,
+                  "type": base_gateway
+                });
+              }
+            });
+          });
+        });
+      });
+    });
+  });
+
+  var b = document.getElementById("list").innerText = JSON.stringify(pairList, null, 4);
+  download();
+}
+
+function download(name, type) {
+  var a = document.getElementById("a");
+  var file = new Blob([JSON.stringify(pairList, null, 4)], {type: 'text/json'});
+  a.href = URL.createObjectURL(file);
+  a.download = 'pair.json';
+}
+
+</script>
